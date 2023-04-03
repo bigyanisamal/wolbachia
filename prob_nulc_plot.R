@@ -1,18 +1,4 @@
-# wolbachia
-
-hello
-wolbachia here
-
-
-# Varibility Plot
-
-## Requirement
-
-### Idea behind the code
-> Here we are taking variation at each position
-
-
-```prob_nucl_plot <- function(df, start, end) {
+prob_nucl_plot <- function(df, start, end) {
   print(df[start:end,])
   conserve_find_plot <- ggplot(data = df[start:end,], mapping = aes(x= position, y = max_prob_wolbachia, colour = factor(max_nucl_wolbachia)), shape=16)+
     geom_point()+
@@ -22,4 +8,3 @@ wolbachia here
     labs(colour="Nucleotide")
   ggplotly(conserve_find_plot)
 }
-```
