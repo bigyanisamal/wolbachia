@@ -4,7 +4,7 @@ prob_nucl_plot <- function(df, start, end) {
     geom_point()+
     geom_point(data = df[start:end,], mapping = aes(x=position, y=max_prob_no_wolbachia, colour = factor(max_nucl_no_wolbachia)), shape=17)+
     geom_point(data = df[start:end,], mapping = aes(x=position, y=min_prob_no_wolbachia, colour = factor(min_nucl_no_wolbachia)), shape=15)+
-    labs(x="position", y= "probability of nucleotide")+
+    labs(x="position", y= "probability of nucleotide at given position")+
     labs(colour="Nucleotide")
   ggplotly(conserve_find_plot)
 }
