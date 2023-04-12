@@ -1,31 +1,4 @@
-# wolbachia
-
-hello
-wolbachia here
-
-
-# Varibility Plot
-
-## Requirement
-
-### Idea behind the code
-> Here we are taking variation at each position
-
-
-```prob_nucl_plot <- function(df, start, end) {
-  print(df[start:end,])
-  conserve_find_plot <- ggplot(data = df[start:end,], mapping = aes(x= position, y = max_prob_wolbachia, colour = factor(max_nucl_wolbachia)), shape=16)+
-    geom_point()+
-    geom_point(data = df[start:end,], mapping = aes(x=position, y=max_prob_no_wolbachia, colour = factor(max_nucl_no_wolbachia)), shape=17)+
-    geom_point(data = df[start:end,], mapping = aes(x=position, y=min_prob_no_wolbachia, colour = factor(min_nucl_no_wolbachia)), shape=15)+
-    labs(x="position", y= "probability of nucleotide")+
-    labs(colour="Nucleotide")
-  ggplotly(conserve_find_plot)
-}
-```
- ### R code for creating dashboard for kraken results
- >This is a code to create dashboard for kraken output and other results
- ```# for kraken results dashboard
+# for kraken results dashboard
 library(shiny)
 library(shinydashboard)
 library(DT)
@@ -291,8 +264,8 @@ server <- function(input, output) {
       build_sankey_network(report, maxn=15)
     }
     )
-}                                                                                 shinyApp(ui, server)
-```                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 
+shinyApp(ui, server)
 
 
