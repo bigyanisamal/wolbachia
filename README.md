@@ -23,3 +23,6 @@ wolbachia here
   ggplotly(conserve_find_plot)
 }
 ```
+ ### R code for creating dashboard for kraken results
+ >This is a code to create dashboard for kraken output and other results
+ ```
