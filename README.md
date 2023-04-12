@@ -24,7 +24,7 @@ wolbachia here
 }
 ```
  ### R code for creating dashboard for kraken results
- >This is a code to create dashboard for kraken output and other results
+ >This is a code to creating dashboard for kraken output and other results
  ```# for kraken results dashboard
 library(shiny)
 library(shinydashboard)
