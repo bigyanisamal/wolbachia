@@ -18,20 +18,35 @@ library(plotly)
 library(magrittr)
 library(networkD3)
 library(pavian)
+library(corrr)
+
+kraken_classification_data<-read.delim("/home/ibab/bigyani/4th_sem/project/dashboard/kraken_classification.tsv", sep ="\t")
+colnames(kraken_classification_data)[5:10] <- c('TI','TII','TIII','TIV', 'BW','MW')
+kraken_classification_data[is.na(kraken_classification_data)] <- 0
+my_colors <- c("#f8c607","#1c6b1a","#cc5c00","#b695f6","#ff5e5e","#249fc3","#a32161","#42e58f","#c57c80","#fd6c9e",
+                        "#f25512","#870a0a","#84aa09","#11ff11","#ff1111","#9f5084","#ffb7a1","#703815",
+                        "#6f787f","#fe54ff","#b6873f","#61f1fd","#1111ff","#21a363","#e5d625","#6321a3","#90d1b1")
+                        
 
 
 ui<- dashboardPage(
   dashboardHeader(title =" An. stephensi metagenome"),
   dashboardSidebar(sidebarMenu(
-    #menuItem("Homepage",tabName = "homepage", icon=icon(lib=fontawesome, "building")),
+    menuItem("Homepage",tabName = "homepage", icon=icon("building", class = NULL, lib="font-awesome")),
     menuItem("Visualization", tabName = "visualization", icon = icon("bar-chart")),
-            # menuSubItem("Sankey Plot",tabName = "sankeyplot"),
-            # menuSubItem("Pooled Top species",tabName = "topspecies")),
-    menuItem("Analysis", tabName = "analysis", icon = icon("table"))
+    menuItem("Analysis", tabName = "analysis", icon = icon("table"),
+     menuSubItem("Rank based correlation plot",tabName = "correlationplot"),
+     menuSubItem("Taxa bundance across samples ",tabName = "lineplot"))
   
   )),
   dashboardBody(
-    fluidPage(tabItems(
+    fluidPage(tags$head(
+      tags$style(
+        HTML("#Plot_line_graph {
+          background-color: #61f1fd;
+          width: 100px;
+          border-width: 3px;}"))),
+      tabItems(
       # tabItem(tabName = "analysis", 
       #         h1("Analysis"),
       # titlePanel("DT table for kraken results"),
@@ -57,12 +72,25 @@ ui<- dashboardPage(
               box(width= 12, DTOutput("kraken_table",height=400)),
               box(width=9, sankeyNetworkOutput("sankey_plot", height=500)),
               box(width=3, plotlyOutput("top_ten_species", height=500))
-            ))
+            )),
+    tabItem(tabName = "lineplot", 
+            fluidRow(
+            column(4, selectizeInput("taxa", "Choose a taxa:",list("Genus", "Order"))),
+            column(width=6, 
+                   selectizeInput(inputId = "taxaSelected",label = "Taxaname", choices = NULL, multiple=TRUE)),
+                    actionButton(inputId = "Plot_line_graph", label = "PLOT"),
+            box(width= 12, DTOutput("taxaranktable"),height=300),
+            box(width=12, plotlyOutput("across_taxa_plot"),height=400))),
+    tabItem(tabName = "correlationplot",
+            column(6, selectizeInput("sample", " Choose a sample population: ",list("TI", "TII", "TIII", "TIV", "BW", "MW"))),
+            column(6, selectizeInput("taxon", "Choose a taxonomic rank: ",list("Species", "Genus", "Family", "Class", "Order"))),
+            box(width=6, plotlyOutput("top_species_across_samples"), height=500),
+            box(width=6,plotOutput("correlation_plot"), height=500))
+    )
   )
 )
 )
-)
-server <- function(input, output) {
+server <- function(input, output, session) {
   kraken_data <- read.delim("/home/ibab/bigyani/4th_sem/project/dashboard/kraken_classification.tsv",sep="\t")
   output$kraken_table <- renderDT({
      colnames(kraken_data)[5:10] <- c("TI","TII","TIII","TIV","BW","MW") 
@@ -114,10 +142,7 @@ server <- function(input, output) {
     )
     })
     output$top_ten_species <- renderPlotly({
-      my_colors <- c("#f8c607","#1c6b1a","#cc5c00","#b695f6","#ff5e5e","#249fc3","#a32161","#42e58f","#c57c80","#fd6c9e",
-                              "#f25512","#870a0a","#84aa09","#11ff11","#ff1111","#9f5084","#ffb7a1","#703815",
-                              "#6f787f","#fe54ff","#b6873f","#61f1fd","#1111ff","#21a363","#e5d625","#6321a3","#90d1b1")
-                              
+
       kraken_data_species <- read.delim("/home/ibab/bigyani/4th_sem/project/dashboard/kraken_all.tsv",sep="\t")
       kraken_data2=data.frame()
       for(i in 1:nrow(kraken_data_species))
@@ -143,6 +168,7 @@ server <- function(input, output) {
       BW=data.frame()
       BW <- kraken_data2[,c(1,9)] %>% arrange(desc(kraken_data2[9])) %>% 
         slice_head(n=10)
+      
       MW=data.frame()
       MW <- kraken_data2[,c(1,10)] %>% arrange(desc(kraken_data2[10])) %>% 
         slice_head(n=10)
@@ -158,8 +184,8 @@ server <- function(input, output) {
       
       
       data = melt(species_data_percentage[,c(1:6)])
-      data$X2 <- factor(data$X2, levels=c("TI","TII","TIII","TIV","BW","MW"))
-      species_abundance_plot<-ggplot(data=data, aes(x = X2, y = value, fill = X1)) +  geom_bar(stat = "identity") + 
+      data$Var2 <- factor(data$Var2, levels=c("TI","TII","TIII","TIV","BW","MW"))
+      species_abundance_plot<-ggplot(data=data, aes(x = Var2, y = value, fill = Var1)) +  geom_bar(stat = "identity") + 
         theme(legend.position = "none")+ scale_fill_manual(values=my_colors)+
         #theme(axis.text.x=element_text(angle = 90))   +  theme(legend.position="right", legend.text = element_text(size=13)) + 
         labs(fill = "Species") + ggtitle("India(pooled)species level-(Top species)")+
@@ -264,6 +290,71 @@ server <- function(input, output) {
       build_sankey_network(report, maxn=15)
     }
     )
+    rv <- reactiveValues(filtered_data = NULL, kraken_classification_data2 = NULL)
+    
+    observeEvent(input$taxa,{
+      req(input$taxa)
+      if(input$taxa == 'Order') {
+        rv$kraken_classification_data2 = kraken_classification_data[(kraken_classification_data$taxRank == "O"),]
+      } else if (input$taxa == 'Genus'){
+        rv$kraken_classification_data2 = kraken_classification_data[(kraken_classification_data$taxRank == "G"),]
+      }
+      updateSelectizeInput(session, "taxaSelected", choices = rv$kraken_classification_data2$name)
+      output$taxaranktable <- renderDT({ data2<- datatable(rv$kraken_classification_data2,
+                                                           options = list(paging = TRUE, pageLength = 6, scrollX = TRUE,scrollY = TRUE, Width = 3,height =3,server = FALSE
+                                                           ), selection = 'single', rownames = FALSE)
+      })
+    })
+    
+    observeEvent(input$Plot_line_graph, {
+      
+      variable <- rv$kraken_classification_data2[grepl(paste(input$taxaSelected, collapse="|"), rv$kraken_classification_data2$name, ignore.case = TRUE), ]
+      variable <- variable[, c("name", "TI", "TII", "TIII", "TIV", "BW", "MW")]
+      melted_data <- reshape2::melt(variable, id.vars = "name")
+      
+      
+      output$across_taxa_plot <- renderPlotly({
+        p <- ggplot(data=melted_data, aes(x = variable, y = value, group=name, color=name)) +
+          geom_line() + ggtitle(" Read Count percentage for chosen organism")+
+          labs(y="percentage", x = "Sample")+
+          theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+          scale_color_discrete(labels = element_text(size = 4))
+        ggplotly(p)
+      })
+    })
+    observeEvent(list(input$taxon, input$sample), {
+      req(input$taxon)
+      # browser()
+      tax_rank <- substr(input$taxon,1,1)
+        all_population_rank <- kraken_classification_data %>%
+          filter(taxRank == tax_rank) %>%
+          select(5:10) %>%
+          replace(is.na(.), 0)
+        colnames(all_population_rank) <-  c('TI','TII','TIII','TIV','BW','MW')
+        lab_res_cor_rank <- cor(all_population_rank, method = "spearman")
+        pheatmap(lab_res_cor_rank,color = RColorBrewer::brewer.pal(9, "Reds"),display_numbers = F,number_color="black", fontsize_number = 12, main= "SPEARMAN RANK BASED BACTERIAL CORRELATION- Kraken")
+      
+         output$correlation_plot <- renderPlot({
+         Plot <- network_plot(correlate(all_population_rank, use = "complete.obs" ,method = "kendall" ), min_cor=0.01, colors = c("red" ,"blue"))
+          main_plot <- Plot + labs(title=paste(input$taxon, " based Kendall Rank Correlation for all samples - Network Plot", sep =" "))+ 
+          theme(plot.title = element_text(size=11, face ="bold"))
+          main_plot
+    })
+       req(input$sample)
+       abundant_taxa <- kraken_classification_data %>% filter(taxRank == tax_rank) %>% 
+                        select(name,taxRank, input$sample) %>%  arrange(desc(.data[[input$sample]])) %>% head(5)
+       output$top_species_across_samples <- renderPlotly({
+       plot <- ggplot(data = abundant_taxa, aes(x=name, y=.data[[input$sample]], fill=name))+geom_bar(stat = "identity") + 
+         theme(legend.position = "none")+ scale_fill_manual(values=my_colors)+
+         scale_x_discrete(label = function(x) stringr::str_trunc(x, 12)) +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1.2, vjust = 0.2))+
+         ggtitle(paste("Top organisms for chosen taxa and sample ", {{input$sample}}, sep= " "))+ 
+         labs(fill = "Species") + theme(plot.title=element_text(size=12, face="bold"))+xlab("species")+ ylab("percentage abundance")
+       ggplotly(plot)
+    })
+    })
+   
+    
 }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 
 shinyApp(ui, server)
